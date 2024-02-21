@@ -15,11 +15,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install
-        run:  
-          sudo apt-get install build-essential cmake
-      - name: Build & Run
+      - name: Install Dependencies
         run: |
-            mkdir build && cd build && cmake ..
-            make test
-            ./test
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git
+          git clone https://github.com/google/googletest
+          cd googletest && mkdir build
+          cd build && cmake .. && make
+          sudo make install
+      - name: Build and Run
+        run: |
+          make
+          make check
