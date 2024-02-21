@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -Wpedantic -std=c++14 -MMD
 TEST_EXE = test #variable for the exutable file
 BUILD_DIR = build
 
-OBJECTS = $(filter-out CircularQueue.cpp, $(wildcard *.cpp))
+OBJECTS = $(filter-out Queue.cpp, $(wildcard *.cpp))
 OBJECTS := $(addprefix $(BUILD_DIR)/, $(OBJECTS:.cpp=.o))
 
 all: .mkbuild $(BUILD_DIR)/$(TEST_EXE)
