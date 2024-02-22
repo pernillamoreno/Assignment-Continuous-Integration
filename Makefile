@@ -1,32 +1,29 @@
 CC = g++
-CFLAGS = -Wall -Wextra -Wpedantic -std=c++14 -MMD
-
-TEST_EXE = test #variable for the exutable file
+CFLAGS = -Wall -Wextra -Wpedantic -std=c++17 -MMD
+LDLIBS = -lgtest_main -lgtest -lgmock
+TEXT_EXE = test
 BUILD_DIR = build
-
-#OBJECTS = $(filter-out CircularQueue.cpp, $(wildcard *.cpp))
 OBJECTS = $(wildcard *.cpp)
 OBJECTS := $(addprefix $(BUILD_DIR)/, $(OBJECTS:.cpp=.o))
 
-all:.mkbuild $(BUILD_DIR)/$(TEST_EXE)
+all: .mkbuild $(BUILD_DIR)/$(TEXT_EXE)
 
-$(BUILD_DIR)/$(TEST_EXE): $(OBJECTS)
-	@$(CC) $+ -lgtest -lgtest_main -o $@
+$(BUILD_DIR)/$(TEXT_EXE): $(OBJECTS)
+	@$(CC) $+ $(LDLIBS) -o $@
 
-#any object file=%.o depend on any=% sorcefile=.cpp
 $(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(BUILD_DIR)
 	@$(CC) -c $(CFLAGS) $< -o $@
 
--include $(wildcard $(BUILD_DIR)/*.d) 
+-include $(wildcard $(BUILD_DIR)/*.d)
 
-.PHONY: all check clean .mkbuild 
+.PHONY: all clean .mkbuild
 
-
-check: .mkbuild $(BUILD_DIR)/$(TEST_EXE) 
-	@./$(BUILD_DIR)/$(TEST_EXE)
+check: .mkbuild $(BUILD_DIR)/$(TEXT_EXE)
+	@./$(BUILD_DIR)/$(TEXT_EXE)
 
 clean:
 	@rm -rf $(BUILD_DIR)
 
 .mkbuild:
-	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)	

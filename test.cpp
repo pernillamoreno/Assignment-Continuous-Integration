@@ -7,12 +7,7 @@
 #include <sstream>
 
 
-TEST(QueueFixture, nothing)
-{
-
-}
-
-/*using ::testing::_;
+using ::testing::_;
 using ::testing::Invoke;
 using ::testing::NiceMock;
 using ::testing::Return;
@@ -49,7 +44,7 @@ public:
 };
 
 
-template <typename T>
+/*template <typename T>
 class QueueFixture : public ::testing::Test
 {
     const std::tuple<
@@ -131,5 +126,5 @@ TYPED_TEST(QueueFixture, testMovable)
     this->queue = std::move(temp);
     EXPECT_EQ(this->values.size(), this->queue.size());
     EXPECT_EQ(0, temp.size());
-}
-*/
+}*/
+

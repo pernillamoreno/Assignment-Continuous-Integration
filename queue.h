@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <vector>
 
-/*struct IMemory
+struct IMemory
 {
     virtual void *malloc(size_t size) = 0;
     virtual void free(void *ptr) = 0;
@@ -67,7 +67,7 @@ public:
     ~Queue() { clear(); }
 };
 
-template <typename T>
+/*template <typename T>
 Queue<T>::Queue(Queue<T> &&that) noexcept : memory{that.memory}, count{that.count}, head{that.head}, tail{that.tail}
 {
     that.count = 0;
