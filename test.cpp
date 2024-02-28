@@ -1,83 +1,127 @@
-#include "queue.h"
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <gtest/gtest.h> // Include the Google Test framework
+#include <gmock/gmock.h> // Include Google Mock for mocking classes
+#include "queue.h" // Include the header file for the circularQueue class
 
+using namespace testing; // Import the testing namespace
+using ::testing::Invoke; // Import the Invoke method for mocks
+using ::testing::NiceMock; // Import NiceMock for nicer mock declarations
+using ::testing::Return; // Import Return for specifying return values in mocks
 
-using ::testing::_; // Import Google Mock's underscore symbol
-using ::testing::Invoke; // Import Google Mock's Invoke function
-using ::testing::NiceMock; // Import Google Mock's NiceMock class
-using ::testing::Return; // Import Google Mock's Return function
-
-// stuct based on IMemory
-struct Memory : public IMemory
-{
+// Mock memory class for testing
+class Memory : public IMemory {
     std::vector<void *> vec;
 
+public:
+    // Mock memory functions
     MOCK_METHOD(void *, malloc, (size_t size), (override));
     MOCK_METHOD(void, free, (void *ptr), (override));
 
-    // WHEN WE ALLOCATE WE PUSH
-    // when allocate is called,
+    // Function to get the number of memory blocks
+    size_t memory_blocks(void) { return vec.size(); }
+
+    // Function to allocate memory
     void *allocate(size_t size)
-    { // we allocate memeory
+    {
         void *ptr{std::malloc(size)};
-        // check if the ptr i 0, if not
+
         if (ptr != nullptr)
         {
-            // push( vec.push_back(ptr) to vector
             vec.push_back(ptr);
         }
+
         return ptr;
     }
-    // WHEN WE RELaSE WE "DELETE"
+
+    // Function to release memory
     void release(void *ptr)
     {
-        // if remove finds a value it removes it to the end of the vector
-        // erace has 3 arguments , begin end and the value we looking for.  Then call release= std::free(ptr);
         vec.erase(std::remove(vec.begin(), vec.end(), ptr), vec.end());
         std::free(ptr);
     }
 
-    // in the distructor we check if the vector is empty or not
-    ~Memory() { EXPECT_EQ(0, vec.size());}
+    // Destructor
+    ~Memory() { EXPECT_EQ(0, vec.size()); }
 };
 
-template <typename T>
-class circularQueueFixture: public ::testing::Test
-{
-  const std::tuple<
-        std::vector<int>,
-        std::vector<float>,
-        std::vector<std::string>>
-        allTestValues{
-            {1,2,3,4},
-            {1.5f, 2.5f, 3.5f, 4.5f},
-            {"pink", "floyd","frank","zappa"}};
-
+template<typename T>
+class circularQueueFixture : public ::testing::Test {
+    
 protected:
-   const std::vector<T> values{std::get<std::vector<T>>(allTestValues)};// T Get the sample values for the current type
-    NiceMock<Memory> mock; // Create a nice mock object for memory management
-    circularQueue<T> queue{mock}; // Create a instance queue object using the mock memory manager
-
-        void SetUp(void) override 
-        { // Setup method executed before each test case
-
-             EXPECT_EQ(0,queue.size()); // Assert that the queue is initially empty
-
-              // Set up mock expectations for malloc and free methods
-             EXPECT_CALL(mock, malloc(_))
-                .WillRepeatedly(Invoke(&mock, &Memory::allocate)); //can be called nuber of times
-             EXPECT_CALL(mock, free(_))
-                .WillRepeatedly(Invoke(&mock, &Memory::release));
-
-        
-            // Enqueue sample values into the queue
-            for (size_t i = 1; i <= values.size(); i++)
-            {
-                EXPECT_TRUE(queue.enqueue(values[i - 1])); // Enqueue each sample value
-                EXPECT_EQ(i, queue.size()); // Assert that the size of the queue increases after enqueueing
-
-            }
-        }
-        void TearDown(void) override {} // Tear down method executed after each test case
+    circularQueue<T> queue{5}; // Initialize a circular queue with size 5
 };
+
+// Define the types of data for testing
+using TestTypes = ::testing::Types<int, float, char>;
+TYPED_TEST_SUITE(circularQueueFixture, TestTypes);
+
+// Test case for write and read operations
+TYPED_TEST(circularQueueFixture, readAndWriteTest) {
+    TypeParam item1 = 42.2;
+    TypeParam item2;
+
+    // write an item into the queue
+    EXPECT_TRUE(this->queue.write(item1));
+
+    // read the item from the queue
+    EXPECT_TRUE(this->queue.read(item2));
+    EXPECT_EQ(item2, item1); // Check if the readd item matches the writed item
+}
+
+// Test case to check if the queue is full
+TYPED_TEST(circularQueueFixture, isFullTest) {
+    for (int i = 0; i < 5; ++i) {
+        TypeParam item = i;
+        EXPECT_TRUE(this->queue.write(item));
+    }
+
+    // Check if the queue is full
+    EXPECT_TRUE(this->queue.fullQueue());
+}
+
+
+// Test case to check the number of elements in the queue
+TYPED_TEST(circularQueueFixture, countElementTest) {
+    // Check if the initial count is 0
+    EXPECT_EQ(this->queue.count(), 0);
+
+    // write elements into the queue
+    for (int i = 0; i < 3; ++i) {
+        TypeParam item = i;
+        this->queue.write(item);
+    }
+
+    // Check if the count matches the number of writed elements
+    EXPECT_EQ(this->queue.count(), 3);
+}
+
+// Test case to calculate the average of elements in the queue
+TYPED_TEST(circularQueueFixture, averageTest) {
+    // Initialize a circular queue with data
+    circularQueue<TypeParam> queueElement{5};
+    for (int i = 1; i <= 8; ++i) {
+        queueElement.write(i);
+    }
+
+    // Check the calculated average
+    EXPECT_EQ(queueElement.average(), 3.0);
+}
+
+TYPED_TEST(circularQueueFixture, resizeTest) {
+    // Resize the queue to size 4
+    this->queue.resize(3); 
+    
+    // Output a message to the terminal
+   
+    
+    // Check if the count is 0 after resizing
+    EXPECT_EQ(this->queue.count(), 0); 
+
+    // write elements into the resized queue
+    for (int i = 0; i < 4; ++i) {
+        TypeParam item = i;
+        this->queue.write(item);
+    }
+
+    // Check if the count matches the number of writed elements
+    EXPECT_EQ(this->queue.count(), 3);
+}
