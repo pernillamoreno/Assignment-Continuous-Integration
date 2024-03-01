@@ -1,263 +1,294 @@
-#ifndef CIRCULARQUEUE_H
-#define CIRCULARQUEUE_H
+#ifndef QUEUE_H // Header guard to prevent multiple inclusion
+#define QUEUE_H
 
-#include <stdexcept>
-#include <cstddef>
-#include <type_traits>
-#include <algorithm>
+#include <iostream> // Standard input/output stream
+#include <cstddef>  // Standard library definitions
+
+using namespace std; // Using the standard namespace
 
 // Interface for memory management
 struct IMemory
 {
-    // Function to allocate memory
+    // Virtual method for allocating memory
     virtual void *malloc(size_t size) = 0;
-    // Function to free memory
+    // Virtual method for freeing memory
     virtual void free(void *ptr) = 0;
-    // Virtual destructor
+    // Virtual destructor for interface
     virtual ~IMemory() = default;
 };
 
-// Circular queue class template
+// Template class for a circular queue
 template <typename T>
-class circularQueue
+class circleQueue
 {
-    // Internal structure for a node in the queue
+    // Node structure for the elements of the queue
     struct Node
     {
-        T data;       // Data stored in the node
-        Node *next; // Pointer to the next node
+        T data;         // Data stored in the node
+        Node *next{nullptr}; // Pointer to the next node in the queue
     };
 
-    Node *head{nullptr}; // Pointer to the first node
-    Node *tail{nullptr}; // Pointer to the last node
-    size_t stockroom;         // Maximum size of the queue
-    size_t counter;        // Number of elements in the queue
+    size_t count{0};    // Number of elements currently in the queue
+    size_t scope{0};    // Maximum capacity of the queue
+    IMemory &memory;    // Reference to a memory management object
+    Node *head{nullptr}; // Pointer to the first node in the queue
+    Node *tail{nullptr}; // Pointer to the last node in the queue
 
 public:
-    // Deleted copy constructor and assignment operator to prevent copying
-    circularQueue(const circularQueue &) = delete;
-    circularQueue &operator=(const circularQueue &) = delete;
+    // Deleted copy constructor to prevent copying
+    circleQueue(const circleQueue &other) = delete;
+    // Deleted copy assignment operator to prevent copying
+    circleQueue &operator=(const circleQueue &other) = delete;
 
-    // Constructor
-    circularQueue(size_t size) : head(nullptr), tail(nullptr), stockroom(0), counter(0)
+    // Constructor to initialize the circular queue with a given scope and memory object
+    circleQueue(size_t _scope, IMemory &_memory) : scope{_scope}, memory{_memory}
     {
-        // Initialize the circular queue with a given size
-        if (size > 2) // Ensure the size is at least 5
+        // Check if the scope is less than 3, throw an invalid argument exception
+        if (scope < 3)
         {
-            stockroom = size;
-            // Create nodes for each element in the queue
-            for (size_t i = 0; i < size; ++i)
+            throw invalid_argument("The size must be at least 3");
+        }
+
+        // Initialize the queue by allocating memory for each node
+        for (size_t i = 0; i < scope; ++i)
+        {
+            // Allocate memory for a new node using the provided memory object
+            Node *newNode{static_cast<Node *>(memory.malloc(sizeof(Node)))};
+
+            // If memory allocation fails, deallocate previously allocated memory and throw a bad allocation exception
+            if (newNode == nullptr)
             {
-                // Allocate memory for a new node
-                Node *newNode = new (std::nothrow) Node;
-                
-
-                if (newNode == nullptr)
+                while (head != nullptr)
                 {
-                    // If memory allocation fails, clear the queue and exit the loop
-                    clear();
-                    break;
+                    tail = head;
+                    head = head->next;
+                    tail->~Node();
+                    memory.free(tail);
                 }
-
-                newNode->next = nullptr; // Initialize the new node
-
-                // Connect the new node to the queue
-                if (head == nullptr)
-                {
-                    head = newNode;
-                    tail = newNode;
-                }
-                else
-                {
-                    tail->next = newNode;
-                    tail = newNode;
-                }
+                throw bad_alloc();
             }
 
-            tail = head; // Make the queue circular
-        }
-    }
+            // Construct a new node using placement new
+            (void)new (newNode) Node;
 
-    // Destructor
-    ~circularQueue() { clear(); }
-
-    // Move constructor
-    circularQueue(circularQueue &&that) noexcept : head(that.head), tail(that.tail), stockroom(that.stockroom), counter(that.counter)
-    {
-        // Transfer ownership of resources from 'that' to the current object
-        that.head = nullptr;
-        that.tail = nullptr;
-        that.stockroom = 0;
-        that.counter = 0;
-    }
-
-    // Move assignment operator
-    circularQueue &operator=(circularQueue &&that) noexcept
-    {
-        if (this != &that)
-        {
-            // Clear the current queue and transfer resources from 'that'
-            clear();
-            stockroom = that.stockroom;
-            counter = that.counter;
-            head = that.head;
-            tail = that.tail;
-
-            // Reset 'that'
-            that.counter = 0;
-            that.head = nullptr;
-            that.tail = nullptr;
-        }
-        return *this;
-    }
-
-    // Function to write an element into the queue
-    bool write(const T &data)
-    {//ADD TAIL
-        if (tail != nullptr)
-        {
-
-            // Store the data in the current tail node
-            tail->data = data;
-            // Move the tail pointer to the next node
-            tail = tail->next;
-
-            // Check if the queue is full
-            if (stockroom== counter)
+            // Connect the new node to the queue
+            if (i == 0)
             {
-                // If full, move the head pointer to the next node
-                head = head->next;
+                head = tail = newNode;
             }
             else
             {
-                // Otherwise, increment the counter
-                ++counter;
+                tail->next = newNode;
+                tail = newNode;
             }
-            return true;
         }
-        return false;
+
+        // Make the queue circular by connecting the last node to the first node
+        tail->next = head;
+        tail = head;
     }
 
-    // Function to read an element from the queue
-    // Function to read data from the queue
-    bool read(T &item)
+    // Move constructor to efficiently transfer ownership of resources
+    circleQueue(circleQueue &&that) noexcept : count{that.count}, scope{that.scope}, memory{that.memory}, head{that.head}, tail{that.tail}
     {
-        if (head != nullptr) // Check if the head is not null
-        {
-            item = head->data; // Read data from the current head node
-            head = head->next; // Move the head pointer to the next node
-            --counter;         // Decrement the counter
-            return true;       // Return true indicating successful read
-        }
-        return false; // Return false indicating failure to read
+        // Reset the moved-from object
+        that.count = 0;
+        that.scope = 0;
+        that.head = nullptr;
+        that.tail = nullptr;
     }
 
-
-    // Function to clear the queue
-    void clear()
+    // Move assignment operator to efficiently transfer ownership of resources
+    circleQueue &operator=(circleQueue &&that) noexcept
     {
-        while (head != nullptr) // Loop until head becomes nullptr
+        // Check for self-assignment
+        if (this != &that)
         {
-            Node *temp = head; // Store the current head in a temporary pointer
-            head = head->next;   // Move the head pointer to the next node
-            delete temp;         // Delete the node pointed to by temp
-            if (head == tail)    // Check if head has reached the tail
+            // Deallocate memory for the existing nodes
+            for (size_t i = 0; i < count; i++)
             {
-                break; // If so, break the loop
+                tail = head;
+                head = head->next;
+                tail->~Node();
+                memory.free(tail);
             }
-        }
-        head = tail = nullptr; // Set both head and tail to nullptr
-        counter = 0;           // Reset the counter to 0
-    }
-    // Function to return the number of elements in the queue
-    size_t count() { return counter; }
 
-    // Function to check if the queue is full
-    bool fullQueue() { return counter == stockroom; }
+            // Transfer ownership of resources from the right-hand side to the left-hand side
+            memory = that.memory;
+            scope = that.scope;
+            count = that.count;
+            head = that.head;
+            tail = that.tail;
 
-    // Function to calculate the average of elements in the queue
-    template <typename U = T>
-    typename std::enable_if<std::is_arithmetic<U>::value, double>::type average()
-    {
-        // Output a message to indicate the start of the average calculation
-
-        // Initialize the sum
-        double sum = 0.0;
-        // Pointer to traverse the queue
-        Node *position = head;
-        // Iterate through the queue and calculate the sum of elements
-        for (size_t i = 0; i < counter; ++i)
-        {
-            sum += static_cast<double>(position->data);
-            // Print out the current element being added to the sum
-
-            position = position->next;
+            // Reset the moved-from object
+            that.count = 0;
+            that.scope = 0;
+            that.head = nullptr;
+            that.tail = nullptr;
         }
 
-        // Calculate the average
-        double avg = (counter == 0) ? 0 : (sum / counter);
-
-        // Return the calculated average
-        return avg;
+        return *this;
     }
 
-    // Function to resize the queue
-    void resize(size_t newSize)
+    // Method to write data into the queue
+    void write(const T &data)
     {
-       
+        tail->data = data;   // Write data to the current tail node
+        tail = tail->next;   // Move tail to the next node
 
-        if (newSize == stockroom)
+        // If the queue is full, move head to the next node
+        if (isFull())
         {
-
-            
-            // If the new size is equal to the current size, do nothing
-            return;
-        }
-
-        if (newSize > 2)
-        {
-            // If the new size is greater than 2, adjust the queue size
-            size_t oldElements = stockroom - newSize;
-            Node *position = head;
-            // Remove excess nodes from the head of the queue
-            for (size_t i = 0; i < oldElements; ++i)
-            {
-                Node *temp = position;
-                position = position->next;
-                delete temp;
-               
-            }
-            // Update the head and tail pointers and counter
-            head = position;
-            tail = head;
-            counter = std::min(counter, newSize);
+            head = head->next;
         }
         else
         {
-            // If the new size is 2 or less, adjust the queue size accordingly
-            size_t newElements = newSize - stockroom;
-            Node *previously = tail;
-            // Add new nodes to the tail of the queue
-            for (size_t i = 0; i < newElements; ++i)
-            {
-                Node *newNode = new (std::nothrow) Node;
-                if (newNode == nullptr)
-                {
-                    // If memory allocation fails, clear the queue and exit
-                    clear();
-                    break;
-                }
-                previously->next = newNode;
-                previously = newNode;
-            }
-            // Make the queue circular
-            previously->next = head;
+            count++; // Increment the count of elements in the queue
         }
-        // Update the memory size
+    }
 
-        stockroom = newSize;
-        
+    // Method to read data from the queue
+    T read()
+    {
+        T data{head->data}; // Read data from the current head node
+
+        // If the queue is not empty, move head to the next node and decrement the count
+        if (count > 0)
+        {
+            head = head->next;
+            --count;
+        }
+
+        return data; // Return the read data
+    }
+
+    // Method to check if the queue is full
+    bool isFull()
+    {
+        return count == scope; // Return true if the count equals the scope
+    }
+
+    // Method to get the count of elements in the queue
+    size_t counter()
+    {
+        return count; // Return the count of elements
+    }
+
+    // Method to empty the queue by resetting count and tail
+    void empty()
+    {
+        count = 0;    // Reset the count
+        tail = head;  // Reset the tail to the head
+    }
+
+    // Method to calculate the average of the values in the queue
+    template <typename U = T, typename = enable_if_t<is_arithmetic<U>::value>>
+    double average(void)
+    {
+        double sum = 0.0;        // Initialize sum variable
+        Node *current = head;    // Initialize current node pointer to head
+
+        // Loop through the queue and calculate the sum of values
+        for (size_t i = 0; i < count; ++i)
+        {
+            sum += static_cast<double>(current->data); // Add current data to sum
+            current = current->next;                    // Move to the next node
+        }
+
+        // Return the average (sum divided by count), or 0 if count is 0 to avoid division by zero
+        return ((count > 0) ? (sum / count) : sum);
+    }
+
+    // Method to resize the queue
+    bool resize(size_t newscope)
+    {
+        // If the new scope is less than 3, return false
+        if (newscope < 3)
+            return false;
+
+        // If the new scope is the same as the current scope, return true
+        if (newscope == scope)
+            return true;
+
+        // If the new scope is greater than the current scope
+        if (newscope > scope)
+        {
+            size_t numToAdd = newscope - scope; // Calculate the number of nodes to add
+
+            Node *previousNode = head; // Initialize pointer to node prevNode tail
+
+            // Loop until the node prevNode tail is found
+            while (previousNode->next != tail)
+                previousNode = previousNode->next;
+
+            // Add nodes to the queue
+            for (size_t i = 0; i < numToAdd; ++i)
+            {
+                Node *node = static_cast<Node *>(memory.malloc(sizeof(Node))); // Allocate memory for a new node
+                if (node == nullptr)
+                {
+                    // If memory allocation fails, deallocate previously allocated memory and return false
+                    while (previousNode->next != tail)
+                    {
+                        Node *temp = previousNode->next;
+                        previousNode->next = temp->next;
+                        temp->~Node();
+                        memory.free(temp);
+                    }
+                    return false;
+                }
+
+                // Construct a new node using placement new
+                (void)new (node) Node;
+
+                // Insert the new node into the queue
+                node->next = previousNode->next;
+                previousNode->next = node;
+            }
+
+            tail = previousNode->next; // Update tail pointer
+        }
+        else // If the new scope is less than the current scope
+        {
+            size_t nodesToRemoveCount = scope - newscope; // Calculate the number of nodes to remove
+
+            Node *prevNode = head; // Initialize pointer to node prevNode head
+
+            // Loop until the node prevNode head is found
+            while (prevNode->next != tail)
+                prevNode = prevNode->next;
+
+            // Remove nodes from the queue
+            for (size_t i = 0; i < nodesToRemoveCount; ++i)
+            {
+                Node *nodeToRemove = tail->next; // Get the node to remove
+                tail->next = nodeToRemove->next; // Update next pointer of tail
+                nodeToRemove->~Node();           // Call destructor for the node
+                memory.free(nodeToRemove);       // Deallocate memory for the node
+            }
+
+            // If count is greater than the new scope, update count
+            if (count > newscope)
+                count = newscope;
+
+            scope = newscope; // Update scope
+        }
+
+        return true; // Return true to indicate successful resizing
+    }
+
+    // Destructor to deallocate memory for the nodes
+    ~circleQueue()
+    {
+        // Deallocate memory for each node in the queue
+        for (size_t i = 0; i < scope; i++)
+        {
+            tail = head;
+            head = head->next;
+            tail->~Node();
+            memory.free(tail);
+        }
     }
 };
 
-#endif
+#endif // End of header guard
