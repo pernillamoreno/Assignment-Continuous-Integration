@@ -1,6 +1,6 @@
 [![Queue](https://github.com/pernillamoreno/NewAss/actions/workflows/Queue.yml/badge.svg)](https://github.com/pernillamoreno/NewAss/actions/workflows/Queue.yml)
 
-# NewAss
+# Assignment-Ci
 
 In this assignment, by practicing CI you are supposed to use TDD, googletest and a 
 Makefile to test and develop a template circular queue class implemented 
