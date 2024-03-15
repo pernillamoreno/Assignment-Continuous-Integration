@@ -211,7 +211,7 @@ public:
             return true;
 
         // If the new scope is greater than the current scope
-        if (newscope > scope)
+        if (newscope >= scope)
         {
             size_t numToAdd = newscope - scope; // Calculate the number of nodes to add
 
@@ -271,7 +271,7 @@ public:
             if (count > newscope)
                 count = newscope;
 
-            scope = newscope; // Update scope
+           scope = newscope; // Update scope
         }
 
         return true; // Return true to indicate successful resizing
