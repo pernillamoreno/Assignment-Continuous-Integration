@@ -208,7 +208,7 @@ TYPED_TEST(circleQueueFixture, averageTest)
 }
 
 // Test case to verify the resize method of the circular queue (increase size)
-TYPED_TEST(circleQueueFixture, resizeTest1)
+TYPED_TEST(circleQueueFixture, increaseSizeTest)
 {
     // Reset the queue by emptying it
     this->queue->empty();
@@ -235,7 +235,7 @@ TYPED_TEST(circleQueueFixture, resizeTest1)
 }
 
 // Test case to verify the resize method of the circular queue (decrease size)
-TYPED_TEST(circleQueueFixture, resizeTest2)
+TYPED_TEST(circleQueueFixture, decreaseSizeTest)
 {
     // Reset the queue by emptying it
     this->queue->empty();
@@ -262,7 +262,7 @@ TYPED_TEST(circleQueueFixture, resizeTest2)
 
 
 // Test case to verify the resize method of the circular queue (decrease size to current size)
-TYPED_TEST(circleQueueFixture, resizeTest3)
+TYPED_TEST(circleQueueFixture, currentSizeTest)
 {
     // Resize the queue to the same size (no change)
     EXPECT_TRUE(this->queue->resize(3));
@@ -281,7 +281,3 @@ TYPED_TEST(circleQueueFixture, resizeTest3)
     EXPECT_EQ(this->queue->read(), this->values[4]);
     EXPECT_EQ(this->queue->read(), this->values[1]);
 }
-
-
-
-
