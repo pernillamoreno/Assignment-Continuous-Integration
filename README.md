@@ -1,6 +1,7 @@
 [![Queue](https://github.com/pernillamoreno/NewAss/actions/workflows/Queue.yml/badge.svg)](https://github.com/pernillamoreno/NewAss/actions/workflows/Queue.yml)
 
-# My grade: VGAssignment-Ci
+# My grade: VG  
+Assignment-Ci
 In this assignment, by practicing CI you are supposed to use TDD, googletest and a 
 Makefile to test and develop a template circular queue class implemented 
 using a singly linked list according to the requirements below.
